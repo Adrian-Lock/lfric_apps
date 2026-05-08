@@ -86,3 +86,18 @@ class vn31_t368(MacroUpgrade):
         )
 
         return config, self.reports
+
+
+class vn31_t487(MacroUpgrade):
+    """Upgrade macro for ticket #487 by Adrian Lock."""
+
+    BEFORE_TAG = "vn3.1_t368"
+    AFTER_TAG = "vn3.1_t487"
+
+    def upgrade(self, config, meta_config=None):
+        # Commands From: rose-meta/um-boundary_layer
+        self.add_setting(
+            config, ["namelist:blayer", "improved_tke_diag"], ".false."
+        )
+
+        return config, self.reports
