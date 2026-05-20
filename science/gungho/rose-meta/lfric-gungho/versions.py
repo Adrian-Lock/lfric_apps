@@ -20,32 +20,34 @@ class UpgradeError(Exception):
 
 """
 Copy this template and complete to add your macro
-
 class vnXX_txxx(MacroUpgrade):
     # Upgrade macro for <TICKET> by <Author>
-
     BEFORE_TAG = "vnX.X"
     AFTER_TAG = "vnX.X_txxx"
-
     def upgrade(self, config, meta_config=None):
         # Add settings
         return config, self.reports
 """
+
+
 class vn31_t504(MacroUpgrade):
-    """Upgrade macro for 504 by Adrian Lock"""
+    """Upgrade macro for ticket TTTT by Unknown."""
 
     BEFORE_TAG = "vn3.1"
     AFTER_TAG = "vn3.1_t504"
 
     def upgrade(self, config, meta_config=None):
-        # Add settings
-        self.add_setting(config,
-                  ["namelist:initial_temperature", "theta_pert_start"],
-                   "5000.0")
-        self.add_setting(config,
-                  ["namelist:initial_temperature", "theta_pert_end"],
-                   "7000.0")
-        self.add_setting(config,
-                  ["namelist:initial_temperature", "theta_pert_size"],
-                   "0.5")
+        # Commands From: rose-meta/lfric-gungho
+        self.add_setting(
+            config,
+            ["namelist:initial_temperature", "theta_pert_start"],
+            "5000.0",
+        )
+        self.add_setting(
+            config, ["namelist:initial_temperature", "theta_pert_end"], "7000.0"
+        )
+        self.add_setting(
+            config, ["namelist:initial_temperature", "theta_pert_size"], "0.5"
+        )
+
         return config, self.reports
