@@ -31,3 +31,26 @@ class vnXX_txxx(MacroUpgrade):
         # Add settings
         return config, self.reports
 """
+
+
+class vn31_t504(MacroUpgrade):
+    """Upgrade macro for ticket None by None."""
+
+    BEFORE_TAG = "vn3.1"
+    AFTER_TAG = "vn3.1_t504"
+
+    def upgrade(self, config, meta_config=None):
+        # Commands From: rose-meta/lfric-gungho
+        self.add_setting(
+            config,
+            ["namelist:initial_temperature", "theta_pert_start"],
+            "5000.0",
+        )
+        self.add_setting(
+            config, ["namelist:initial_temperature", "theta_pert_end"], "7000.0"
+        )
+        self.add_setting(
+            config, ["namelist:initial_temperature", "theta_pert_size"], "0.5"
+        )
+
+        return config, self.reports
