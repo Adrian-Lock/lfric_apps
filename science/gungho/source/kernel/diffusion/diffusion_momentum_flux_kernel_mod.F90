@@ -388,15 +388,15 @@ subroutine diffusion_momentum_flux_code( nlayers,                              &
 
       do k = 0, nlayers - 1
         visc_m_w1 = 0.25_r_def * &
-                   ( visc_m_w2h(smap_w2h_true(df_xu, 1       )+k+1) + &
-                     visc_m_w2h(smap_w2h_true(df_yv, 1       )+k+1) + &
-                     visc_m_w2h(smap_w2h_true(df_xu, st_df_xu)+k+1) + &
-                     visc_m_w2h(smap_w2h_true(df_yv, st_df_yv)+k+1) )
+                   ( visc_m_w2h(smap_w2h_true(df_xu, 1       )+k) + &
+                     visc_m_w2h(smap_w2h_true(df_yv, 1       )+k) + &
+                     visc_m_w2h(smap_w2h_true(df_xu, st_df_xu)+k) + &
+                     visc_m_w2h(smap_w2h_true(df_yv, st_df_yv)+k) )
         rho_in_w1 = 0.25_r_def * &
-                   ( rho_in_w2h(smap_w2h_true(df_xu, 1       )+k+1) + &
-                     rho_in_w2h(smap_w2h_true(df_yv, 1       )+k+1) + &
-                     rho_in_w2h(smap_w2h_true(df_xu, st_df_xu)+k+1) + &
-                     rho_in_w2h(smap_w2h_true(df_yv, st_df_yv)+k+1) )
+                   ( rho_in_w2h(smap_w2h_true(df_xu, 1       )+k) + &
+                     rho_in_w2h(smap_w2h_true(df_yv, 1       )+k) + &
+                     rho_in_w2h(smap_w2h_true(df_xu, st_df_xu)+k) + &
+                     rho_in_w2h(smap_w2h_true(df_yv, st_df_yv)+k) )
 
         dy_at_w1 = 0.5_r_def * &
           (dx_at_w2(smap_w2_true(df_yv,1)+k) + &
