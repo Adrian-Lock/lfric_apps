@@ -30,7 +30,6 @@ module wind_transport_alg_mod
                                             get_da_at_w2,         &
                                             get_face_selector_ew, &
                                             get_face_selector_ns
-  use io_config_mod,                  only: subroutine_timers
   use log_mod,                        only: log_event,       &
                                             LOG_LEVEL_ERROR, &
                                             LOG_LEVEL_INFO,  &
@@ -43,7 +42,6 @@ module wind_transport_alg_mod
   use timing_mod,                     only: start_timing, stop_timing, &
                                             tik, LPROF
   use transport_config_mod,           only: broken_w2_projection
-  use timer_mod,                      only: timer
   use transport_config_mod,           only: broken_w2_projection, native_w2_wind_transport
   use transport_constants_mod,        only: get_element_order_h_transport, &
                                             get_element_order_v_transport
@@ -129,7 +127,7 @@ contains
     type(integer_field_type), pointer   :: face_selector_ns
     
 
-    if ( subroutine_timers ) call timer('transport.wind')
+    if ( LPROF ) call start_timing( id_to, 'transport.wind')
 
     k_h = get_element_order_h_transport()
     k_v = get_element_order_v_transport()
@@ -157,9 +155,10 @@ contains
       case ( equation_form_advective )
 
         if ( native_w2_wind_transport ) then 
-          if ( subroutine_timers ) call timer('transport.native-wind')
+          if ( LPROF ) call start_timing( id_to, 'transport.native-wind' )
 
-          if ( subroutine_timers ) call timer('transport.native-wind.setup')
+          if ( LPROF ) call start_timing( id_to, 'transport.native-wind.setup')
+
           ! Transport the winds on their native W2 points
           wt_fs => function_space_collection%get_fs( mesh, k_h, k_v, Wtheta )
           w2h_fs => function_space_collection%get_fs( mesh, k_h, k_v, W2h )
@@ -179,8 +178,8 @@ contains
                                                   face_selector_ew,     & 
                                                   face_selector_ns ) )
 
-          if ( subroutine_timers ) call timer('transport.native-wind.setup')
-          if ( subroutine_timers ) call timer('transport.native-wind.transport')
+          if ( LPROF ) call stop_timing( id_to, 'transport.native-wind.setup')
+          if ( LPROF ) call start_timing( id_to, 'transport.native-wind.transport')
           do dir = 1,2
             call log_field_minmax( LOG_LEVEL_INFO, 'wind_n', u_w3_n(dir) )
             call transport_field(                                                &
@@ -196,10 +195,10 @@ contains
           ! so are initialised here to avoid problems
           call chi1_d_w2%initialise( w2_fs )
           call chi2_d_w2%initialise( w2_fs )
-          if ( subroutine_timers ) call timer('transport.native-wind.transport')
+          if ( LPROF ) call stop_timing( id_to, 'transport.native-wind.transport')
 
           if ( geometry == geometry_spherical ) then 
-          if ( subroutine_timers ) call timer('transport.native-wind.coord_transport')
+          if ( LPROF ) call start_timing( id_to, 'transport.native-wind.coord_transport')
           ! For the metric terms we need to transport the (horizontal)
             ! spherical coordinate field to get the values at the departure points
             ! Transport lambda & phi for lat-lon and alpha & beta for cubed sphere
@@ -227,10 +226,10 @@ contains
                          sample_field_kernel_type( chi1_d_w2, rmultiplicity_w2, chi1_d), &
                          sample_field_kernel_type( chi2_d_w2, rmultiplicity_w2, chi2_d) )
 
-          if ( subroutine_timers ) call timer('transport.native-wind.coord_transport')
+          if ( LPROF ) call stop_timing( id_to, 'transport.native-wind.coord_transport')
           end if
 
-          if ( subroutine_timers ) call timer('transport.native-wind.metrics')
+          if ( LPROF ) call start_timing( id_to, 'transport.native-wind.metrics')
           call u_w2_inc%initialise( w2_fs, halo_depth=2 )
           call u_w2_inc_with_metrics%initialise( w2_fs )
           mm_w2 => get_mass_matrix_fv(W2, mesh%get_id())
@@ -250,8 +249,8 @@ contains
                        matrix_vector_kernel_type(rhs_u, u_w2_inc_with_metrics,  &
                        mm_w2),                                                  &
                        enforce_bc_kernel_type(rhs_u) )
-          if ( subroutine_timers ) call timer('transport.native-wind.metrics')
-          if ( subroutine_timers ) call timer('transport.native-wind')
+          if ( LPROF ) call stop_timing( id_to, 'transport.native-wind.metrics')
+          if ( LPROF ) call stop_timing( id_to, 'transport.native-wind')
 
         else
 
@@ -265,7 +264,7 @@ contains
           ! Split wind into components in W3
           ! -------------------------------------------------------------------- !
 
-          if ( subroutine_timers ) call timer('transport.wind_to_comps')
+          if ( LPROF ) call start_timing( id_to, 'transport.wind_to_comps')
 
           do dir = 1,3
             call u_w3_n(dir)%initialise( w3_fs )
@@ -293,7 +292,7 @@ contains
           call log_field_minmax( LOG_LEVEL_TRACE, 'ydot', u_w3_n(2) )
           call log_field_minmax( LOG_LEVEL_TRACE, 'zdot', u_w3_n(3) )
 
-          if ( subroutine_timers ) call timer('transport.wind_to_comps')
+          if ( LPROF ) call stop_timing( id_to, 'transport.wind_to_comps')
 
           ! -------------------------------------------------------------------- !
           ! Transport wind components in W3
@@ -310,7 +309,7 @@ contains
           ! Return from components to full wind field in W2
           ! -------------------------------------------------------------------- !
 
-          if ( subroutine_timers ) call timer('transport.wind_from_comps')
+          if ( LPROF ) call start_timing( id_to, 'transport.wind_from_comps')
 
           project_xdot_to_w2 => get_project_xdot_to_w2(mesh%get_id())
           project_ydot_to_w2 => get_project_ydot_to_w2(mesh%get_id())
@@ -374,7 +373,7 @@ contains
                          enforce_bc_kernel_type(rhs_u) )
           end if
 
-          if ( subroutine_timers ) call timer('transport.wind_from_comps')
+          if ( LPROF ) call stop_timing( id_to, 'transport.wind_from_comps')
 
         end if ! native wind transport
         call log_field_minmax( LOG_LEVEL_INFO, 'advection increment', rhs_u )
@@ -392,6 +391,8 @@ contains
       end select
 
     end if ! si_momentum_equation
+
+    if ( LPROF ) call stop_timing( id_to, 'transport.wind')
 
   end subroutine wind_transport_alg
 
