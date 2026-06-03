@@ -124,9 +124,12 @@ module horizontal_sl_advective_alg_mod
     logical(kind=l_def) :: do_overwrite
     real(kind=r_tran)   :: dt_frac, dt
     real(kind=r_tran)   :: one_over_dt, half_dt
+<<<<<<< HEAD
     integer(tik)        :: id
 
+=======
     integer(kind=i_def), parameter :: dep_pt_depth = 1_i_def
+>>>>>>> gitmig_native_w2_sl
 
     ! Transport objects
     type(wind_precomputations_type), pointer :: wind_precomputations
