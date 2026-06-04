@@ -74,6 +74,7 @@ module semi_implicit_timestep_alg_mod
   use dg_inc_matrix_vector_kernel_mod, &
                                   only: dg_inc_matrix_vector_kernel_type
   use sci_enforce_bc_kernel_mod,  only: enforce_bc_kernel_type
+  use semi_lump_kernel_mod,       only: semi_lump_kernel_type
 
   ! Derived Types
   use field_array_mod,            only: field_array_type
@@ -632,6 +633,7 @@ contains
 
     type(operator_type), pointer :: mm_wt
     type(operator_type), pointer :: mm_vel
+    type(operator_type), target  :: mm_vel_lump
 
     integer(kind=i_def) :: outer, inner, reference_reset_freq
     real(kind=r_def)    :: varalpha, varbeta ! alpha, beta weight to use
@@ -695,6 +697,10 @@ contains
       mm_wt  => get_mass_matrix_fe(Wtheta, mesh%get_id())
       mm_vel => get_mass_matrix_fe(W2, mesh%get_id())
     end if
+
+    call mm_vel_lump%initialise(u%get_function_space(), u%get_function_space())
+    call invoke( semi_lump_kernel_type( mm_vel_lump, mm_vel ) )
+    mm_vel => mm_vel_lump
 
     !--------------------------------------------------------------------
     ! Copy prognostic field data to state arrays
