@@ -15,6 +15,6 @@ module atmos_max_sizes
 
 implicit none
 
-integer, parameter :: model_levels_max = 250 ! max no of total levels
+integer, parameter :: model_levels_max = 400 ! max no of total levels
 
 end module atmos_max_sizes
