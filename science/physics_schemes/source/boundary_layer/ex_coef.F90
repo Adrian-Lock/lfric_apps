@@ -588,6 +588,8 @@ if ( local_fa==smooth_to_bdys  ) then
 
     kb = 0
     kt = 0
+    zbot = zero
+    ztop = zero
 
     do k = 2, bl_levels-1
 
