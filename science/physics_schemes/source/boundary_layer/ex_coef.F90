@@ -617,9 +617,10 @@ if ( local_fa==smooth_to_bdys  ) then
         kt = k+1
       end if
 
-      if ( kb > 0 .and. kt > 0 ) then
+      if ( kb > 0 .and. kt > 0 .and. ztop > zbot ) then
         ! Once found base and top of sub-critical layer, set
         ! lengthscale on all levels within the layer...
+        ! Test on ztop > zbot is needed for rare crashes with 32-bit
 
         do kl = kb, kt
           ! This formula yields turb_length = ztop - zbot
