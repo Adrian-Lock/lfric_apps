@@ -342,6 +342,7 @@ contains
          i_interp_local_gradients, l_noice_in_turb, l_use_var_fixes,       &
          i_interp_local_cf_dbdz, tke_diag_fac, a_ent_2, dec_thres_cloud,   &
          dec_thres_cu, near_neut_z_on_l, blend_gridindep_fa,               &
+         blend_cth_shcu_only, shallow_cu_maxtop,                           &
          specified_fluxes_tstar, buoy_integ_low, num_sweeps_bflux,         &
          l_use_sml_dsc_fixes, l_converge_ga
     use cloud_inputs_mod, only: i_cld_vn, forced_cu, i_rhcpt, i_cld_area,  &
@@ -1552,6 +1553,11 @@ contains
         l_subfilter_horiz = .true.
         l_subfilter_vert  = .true.
         blending_option   = blend_gridindep_fa
+      case( method_blend_cth_shcu_only )
+        l_subfilter_horiz = .true.
+        l_subfilter_vert  = .true.
+        blending_option   = blend_cth_shcu_only
+        shallow_cu_maxtop = method_shallow_cu_maxtop
       end select
 
     else ! not Smagorinsky
