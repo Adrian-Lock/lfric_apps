@@ -168,14 +168,16 @@ module um_physics_init_mod
                                         heavy_rain_evap_fac_in =>            &
                                                 heavy_rain_evap_fac
 
-  use mixing_config_mod,         only : smagorinsky,                 &
-                                        mixing_method => method,     &
-                                        method_3d_smag,              &
-                                        method_2d_smag,              &
-                                        method_blend_smag_fa,        &
-                                        method_blend_1dbl_fa,        &
-                                        mix_factor_in => mix_factor, &
-                                        leonard_term
+  use mixing_config_mod, only : smagorinsky,                               &
+                                mixing_method => method,                   &
+                                method_3d_smag,                            &
+                                method_2d_smag,                            &
+                                method_blend_smag_fa,                      &
+                                method_blend_1dbl_fa,                      &
+                                method_blend_cth_shcu_only,                &
+                                shallow_cu_maxtop_in => shallow_cu_maxtop, &
+                                mix_factor_in => mix_factor,               &
+                                leonard_term
 
   use radiation_config_mod,      only : topography, topography_horizon
 
@@ -1557,7 +1559,7 @@ contains
         l_subfilter_horiz = .true.
         l_subfilter_vert  = .true.
         blending_option   = blend_cth_shcu_only
-        shallow_cu_maxtop = method_shallow_cu_maxtop
+        shallow_cu_maxtop = real(shallow_cu_maxtop_in, r_bl)
       end select
 
     else ! not Smagorinsky
