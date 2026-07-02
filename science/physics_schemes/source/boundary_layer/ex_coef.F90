@@ -27,7 +27,7 @@ subroutine ex_coef (                                                           &
  bl_levels, k_log_layr, BL_diag,                                               &
 ! in fields
  sigma_h,flandg,dvdzm,ri,rho_wet_tq,z_uv,z_tq,z0m,zhpar,ntpar,                 &
- ntml_nl,ntdsc,nbdsc,l_shallow_cth,rmlmax2,rneutml_sq, delta_smag,             &
+ ntml_nl,ntdsc,nbdsc,shallow_cth,rmlmax2,rneutml_sq, delta_smag,               &
 ! in/out fields
  cumulus,weight_1dbl,                                                          &
 ! out fields
@@ -48,7 +48,7 @@ use bl_option_mod, only:  WeightLouisToLong, Variable_RiC, cbl_op,             &
    lambda_fac, beta_bl, beta_fa, rlinfac, linear0,                             &
    to_sharp_across_1km, ntml_level_corrn, free_trop_layers, two_thirds,        &
    blending_option, blend_except_cu, blend_gridindep_fa, blend_cth_shcu_only,  &
-   extended_tail, zero, one, one_half
+   shallow_cu_maxtop, extended_tail, zero, one, one_half
 use conversions_mod, only: pi => pi_bl
 use gen_phys_inputs_mod, only: l_mr_physics
 
@@ -70,56 +70,54 @@ implicit none
 
 integer, intent(in) ::                                                         &
  bl_levels,                                                                    &
-                 ! in maximum number of boundary layer levels
+                 ! IN maximum number of boundary layer levels
  k_log_layr
-                 ! in num of levs requiring log-profile correction
+                 ! IN num of levs requiring log-profile correction
 
 integer, intent(in) ::                                                         &
  ntml_nl(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end),                 &
-                 ! in Number of model layers in the turbulently
+                 ! IN Number of model layers in the turbulently
                  !    mixed layer as determined from the non-local
                  !    scheme.
  ntdsc(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end),                   &
-                 ! in Top level of any decoupled Sc
+                 ! IN Top level of any decoupled Sc
  nbdsc(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end),                   &
-                 ! in Bottom level of any decoupled Sc layer.
+                 ! IN Bottom level of any decoupled Sc layer.
  ntpar(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end)
-                 ! in Top level of parcel ascent
+                 ! IN Top level of parcel ascent
 
 real(kind=r_bl), intent(in) ::                                                 &
  sigma_h(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end),                 &
-                 ! in Standard deviation of subgrid
+                 ! IN Standard deviation of subgrid
                  !    orography (m)
  rho_wet_tq(tdims%i_start:tdims%i_end,tdims%j_start:tdims%j_end,               &
             bl_levels),                                                        &
-                 ! in density on theta levels;
+                 ! IN density on theta levels;
                  !    used in RHOKM so wet density
  rmlmax2(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end,bl_levels),       &
-                 ! in Square of asymptotic mixing length for Smagorinsky scheme
+                 ! IN Square of asymptotic mixing length for Smagorinsky scheme
  z_uv(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end,bl_levels+1),        &
-                 ! in Z_UV(K) is height of u level k
+                 ! IN Z_UV(K) is height of u level k
  z_tq(tdims%i_start:tdims%i_end,tdims%j_start:tdims%j_end,bl_levels),          &
-                 ! in Z_TQ(K) is height of T,Q level k
+                 ! IN Z_TQ(K) is height of T,Q level k
                  !    NOTE: RI(K) is held at Z_TQ(K-1)
  zhpar(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end),                   &
-                 ! in Height of top of initial parcel ascent
+                 ! IN Height of top of initial parcel ascent
  z0m(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end),                     &
-                 ! in Roughness length for momentum (m).
+                 ! IN Roughness length for momentum (m).
  dvdzm(tdims%i_start:tdims%i_end,tdims%j_start:tdims%j_end,                    &
        2:bl_levels),                                                           &
-                 ! in Modulus of wind shear.
+                 ! IN Modulus of wind shear.
  ri(tdims%i_start:tdims%i_end,tdims%j_start:tdims%j_end,2:bl_levels),          &
-                 ! in Local Richardson number.
+                 ! IN Local Richardson number.
  flandg(pdims_s%i_start:pdims_s%i_end,pdims_s%j_start:pdims_s%j_end),          &
-                 ! in Land fraction on all tiles.
+                 ! IN Land fraction on all tiles.
  rneutml_sq(tdims%i_start:tdims%i_end,tdims%j_start:tdims%j_end,bl_levels),    &
-                 ! in Square of the neutral mixing length for Smagorinsky
- delta_smag(tdims%i_start:tdims%i_end,tdims%j_start:tdims%j_end)
-                 ! in delta_x used by Smagorinsky
-
-logical, intent(in) ::                                                         &
-  l_shallow_cth(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end)
-                 ! in Flag to indicate shallow convection based on cl-top
+                 ! IN Square of the neutral mixing length for Smagorinsky
+ delta_smag(tdims%i_start:tdims%i_end,tdims%j_start:tdims%j_end),              &
+                 ! IN delta_x used by Smagorinsky
+ shallow_cth(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end)
+                 ! IN cloud-top height for identifying shallow cu in blending
 
 ! Declaration of new BL diagnostics.
 type (strnewbldiag), intent(in out) :: BL_diag
@@ -140,44 +138,44 @@ real(kind=r_bl), intent(in out) ::                                             &
 real(kind=r_bl), intent(out) ::                                                &
  rhokm(pdims_s%i_start:pdims_s%i_end,pdims_s%j_start:pdims_s%j_end,            &
        bl_levels),                                                             &
-                 ! out Layer K-1 - to - layer K exchange coefficient
+                 ! OUT Layer K-1 - to - layer K exchange coefficient
                  !       for momentum, on UV-grid with first and last
                  !       levels set to "missing data"
  rhokh(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end,                    &
        bl_levels),                                                             &
-                 ! out Layer K-1 - to - layer K exchange coefficient
+                 ! OUT Layer K-1 - to - layer K exchange coefficient
                  !       for scalars (but currently on th-levels)
                  ! On out: still to be multiplied by rho(if l_mr_physics)
                  !         and, for Ri-based scheme, interpolated to
                  !         rho levels in BDY_EXPL2
  zh_local(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end)
-                 ! out Mixing layer height (m).
+                 ! OUT Mixing layer height (m).
 
 integer, intent(out) ::                                                        &
  ntml_local(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end)
-                 ! out Number of model layers in the turbulently
+                 ! OUT Number of model layers in the turbulently
                  !     mixed layer as determined from the local
                  !     Richardson number profile.
 
 real(kind=r_bl), intent(out) ::                                                &
  lambda_min,                                                                   &
-                 ! out Min value of length scale LAMBDA.
+                 ! OUT Min value of length scale LAMBDA.
  fm_3d(tdims%i_start:tdims%i_end,tdims%j_start:tdims%j_end,bl_levels),         &
-                 ! out stability function for momentum transport.
+                 ! OUT stability function for momentum transport.
                  !     level 1 value is dummy for use in diagnostics
  fh_3d(tdims%i_start:tdims%i_end,tdims%j_start:tdims%j_end,bl_levels),         &
-                 ! out stability function for heat and moisture.
+                 ! OUT stability function for heat and moisture.
                  !     level 1 value is dummy for use in diagnostics
  tke_loc(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end,                  &
             2:bl_levels),                                                      &
-                 ! out Ri-based scheme diagnosed TKE
+                 ! OUT Ri-based scheme diagnosed TKE
  elm(tdims%i_start:tdims%i_end,tdims%j_start:tdims%j_end,2:bl_levels),         &
-                 ! out Mixing length for momentum
+                 ! OUT Mixing length for momentum
  elh(tdims%i_start:tdims%i_end,tdims%j_start:tdims%j_end,2:bl_levels),         &
-                 ! out Mixing length for scalars on theta levels
+                 ! OUT Mixing length for scalars on theta levels
  elh_rho(tdims%i_start:tdims%i_end,tdims%j_start:tdims%j_end,                  &
          2:bl_levels)
-                 ! out Mixing length for scalars on rho levels
+                 ! OUT Mixing length for scalars on rho levels
 
 !-----------------------------------------------------------------------
 !    Local and other symbolic constants :-
@@ -187,6 +185,7 @@ character(len=*), parameter ::  RoutineName = 'EX_COEF'
 real(kind=r_bl) :: eh,em,g0,dh,dm,r_c_tke
 real(kind=r_bl) :: subbmin,subbmax,subcmin,subcmax
 real(kind=r_bl) :: a_ri,b_ri
+real(kind=r_bl) :: elm_1d, elh_1d
 
 parameter (                                                                    &
  eh=25.0_r_bl,                                                                 &
@@ -651,12 +650,13 @@ end if
 !-----------------------------------------------------------------------
 do k = 2, bl_levels
 !$OMP  PARALLEL DEFAULT(none)                                                  &
-!$OMP  PRIVATE(z_scale,j,i,lambdam,lambdah,                                    &
-!$OMP  lambdah_rho,vkz,f_log,zz,zht,zfa,beta)                                  &
+!$OMP  PRIVATE(z_scale,j,i,lambdam,lambdah,lambdah_rho,elm_1d,elh_1d,          &
+!$OMP          vkz,f_log,zz,zht,zfa,beta)                                      &
 !$OMP  SHARED(k,pdims,ri,ricrit,flandg,ntml_local,ntml_nl,z_tq,                &
 !$OMP  l_rp2,lambda_min,par_mezcla_rp,zh_local,turb_length,k_log_layr,         &
-!$OMP  z_uv,z0m,elm,elh,elh_rho,blending_option,cumulus,l_shallow_cth,zhpar,   &
-!$OMP  ntdsc,weight_1dbl,weight_bltop,delta_smag,rneutml_sq,BL_diag,local_fa)
+!$OMP  z_uv,z0m,elm,elh,elh_rho,blending_option,cumulus,shallow_cth,zhpar,     &
+!$OMP  ntdsc,weight_1dbl,weight_bltop,delta_smag,rneutml_sq,BL_diag,local_fa,  &
+!$OMP  shallow_cu_maxtop)
   !-----------------------------------------------------------------
   ! 2.1 Calculate asymptotic mixing lengths LAMBDAM and LAMBDAH
   !-----------------------------------------------------------------
@@ -733,10 +733,13 @@ do k = 2, bl_levels
         ! zht = interface between BL and FA
         zht = max( z_uv(i,j,ntml_nl(i,j)+1) , zh_local(i,j) )
         ! Relevant scale in cumulus layers can be cloud top height, zhpar
-        if ( cumulus(i,j) .and. ( blending_option /= blend_cth_shcu_only .or.  &
-                                  l_shallow_cth(i,j) ) ) then
+        if ( cumulus(i,j) .and. blending_option /= blend_cth_shcu_only ) then
           z_scale = max( z_scale, zhpar(i,j) )
           zht     = max( zht, zhpar(i,j) )
+        else if ( cumulus(i,j) .and. blending_option == blend_cth_shcu_only    &
+                  .and. shallow_cth(i,j) < shallow_cu_maxtop ) THEN
+          z_scale = max( z_scale, shallow_cth(i,j) )
+          zht     = max( zht, shallow_cth(i,j) )
         end if
         ! BL top includes decoupled stratocu layer, if it exists
         if (ntdsc(i,j) > 0) zht = max( zht, z_uv(i,j,ntdsc(i,j)+1) )
@@ -809,10 +812,17 @@ do k = 2, bl_levels
           end if
         end if
 
+        elm_1d = elm(i,j,k)
+        elh_1d = elh(i,j,k)
         elm(i,j,k) = elm(i,j,k)*weight_1dbl(i,j,k) +                           &
                      sqrt(rneutml_sq(i,j,k-1))*(one-weight_1dbl(i,j,k))
         elh(i,j,k) = elh(i,j,k)*weight_1dbl(i,j,k) +                           &
                      sqrt(rneutml_sq(i,j,k-1))*(one-weight_1dbl(i,j,k))
+        if (blending_option == blend_cth_shcu_only ) then
+          ! restrict blended lengthscale to be at most the 1d
+          elm(i,j,k) = MIN( elm_1d, elm(i,j,k) )
+          elh(i,j,k) = MIN( elh_1d, elh(i,j,k) )
+        end if
       end do
     end do
 !$OMP end do
