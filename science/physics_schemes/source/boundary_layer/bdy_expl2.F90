@@ -611,6 +611,9 @@ real(kind=r_bl) ::                                                             &
            2:bl_levels),                                                       &
                                 ! Mixing length for heat (m),
                                 ! held on theta and rho levels, resp.
+   shallow_cth(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end),           &
+                                ! cf_bulk cloud top height used in blended BL
+                                ! for shallow convection
    fm_3d(tdims%i_start:tdims%i_end,tdims%j_start:tdims%j_end,bl_levels),       &
                                 ! stability function for momentum transport
                                 ! level 1 value is dummy
@@ -726,9 +729,6 @@ logical ::                                                                     &
                                ! Flag for having reached
                                ! the top of the turbulently mixed
                                ! layer.
- l_shallow_cth(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end),           &
-                               ! Flag to indicate shallow convection based on
-                               ! cf_bulk cloud top height
  cloud_base_found(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end),        &
                                ! Flag for having reached cloud base
  cloud_top_found(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end)
@@ -1943,10 +1943,11 @@ end if  ! test on NON_LOCAL_BL
 !$OMP SCHEDULE(STATIC)                                                         &
 !$OMP DEFAULT(none)                                                            &
 !$OMP private(j,i)                                                             &
-!$OMP SHARED(pdims,l_shallow_cth)
+!$OMP SHARED(pdims,shallow_cth)
 do j = pdims%j_start, pdims%j_end
   do i = pdims%i_start, pdims%i_end
-    l_shallow_cth(i,j) = .false.
+    shallow_cth(i,j) = zero ! initialise to zero for case of no cloud
+                            ! - will then blend using BL depth
   end do
 end do
 !$OMP end PARALLEL do
@@ -1958,8 +1959,8 @@ if (blending_option == blend_cth_shcu_only) then
 !$OMP PARALLEL                                                                 &
 !$OMP DEFAULT(none)                                                            &
 !$OMP private(i,j,k)                                                           &
-!$OMP SHARED(pdims,bl_levels,z_uv,l_shallow_cth,cumulus,ntml,cf_bulk,          &
-!$OMP        shallow_cu_maxtop,cloud_base_found,cloud_top_found)
+!$OMP SHARED(pdims,bl_levels,z_uv,shallow_cth,cumulus,ntml,cf_bulk,            &
+!$OMP        cloud_base_found,cloud_top_found)
 !$OMP do SCHEDULE(STATIC)
   do j = pdims%j_start, pdims%j_end
     do i = pdims%i_start, pdims%i_end
@@ -1982,7 +1983,7 @@ if (blending_option == blend_cth_shcu_only) then
              cf_bulk(i,j,k+1) < sc_cftol ) then
           ! got to cloud-top
           cloud_top_found(i,j) = .true.
-          l_shallow_cth(i,j)   = z_uv(i,j,k+1) < shallow_cu_maxtop
+          shallow_cth(i,j)     = z_uv(i,j,k+1)
         end if
       end do
     end do
@@ -1998,7 +1999,7 @@ call ex_coef (                                                                 &
    bl_levels,k_log_layr,BL_diag,                                               &
 ! in fields
    sigma_h,flandg,dvdzm,ri,rho_wet_tq,z_uv,z_tq,z0m_eff_gb,zhpar,ntpar,        &
-   ntml_nl,ntdsc,nbdsc,l_shallow_cth,rmlmax2,rneutml_sq,delta_smag,            &
+   ntml_nl,ntdsc,nbdsc,shallow_cth,rmlmax2,rneutml_sq,delta_smag,              &
 ! in/out fields
    cumulus,weight_1dbl,                                                        &
 ! out fields
@@ -2620,7 +2621,7 @@ do j = pdims%j_start, pdims%j_end
         bl_type_6(i,j) = one
         ! Label this shallow regime as 2.0_r_bl here, to be able to identify it
         ! in diagnostics_bl, but the "cumulus" stash output will still be 1.0
-        if (l_shallow_cth(i,j)) bl_type_6(i,j) = 2.0_r_bl
+        if (shallow_cth(i,j) < shallow_cu_maxtop) bl_type_6(i,j) = 2.0_r_bl
       end if
     end if
 
