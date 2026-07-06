@@ -48,7 +48,7 @@ use bl_option_mod, only:  WeightLouisToLong, Variable_RiC, cbl_op,             &
    lambda_fac, beta_bl, beta_fa, rlinfac, linear0,                             &
    to_sharp_across_1km, ntml_level_corrn, free_trop_layers, two_thirds,        &
    blending_option, blend_except_cu, blend_gridindep_fa, blend_cth_shcu_only,  &
-   shallow_cu_maxtop, extended_tail, zero, one, one_half
+   shallow_cu_maxtop, extended_tail, zero, one, one_half, cap_blended_ml
 use conversions_mod, only: pi => pi_bl
 use gen_phys_inputs_mod, only: l_mr_physics
 
@@ -656,7 +656,7 @@ do k = 2, bl_levels
 !$OMP  l_rp2,lambda_min,par_mezcla_rp,zh_local,turb_length,k_log_layr,         &
 !$OMP  z_uv,z0m,elm,elh,elh_rho,blending_option,cumulus,shallow_cth,zhpar,     &
 !$OMP  ntdsc,weight_1dbl,weight_bltop,delta_smag,rneutml_sq,BL_diag,local_fa,  &
-!$OMP  shallow_cu_maxtop)
+!$OMP  shallow_cu_maxtop,cap_blended_ml)
   !-----------------------------------------------------------------
   ! 2.1 Calculate asymptotic mixing lengths LAMBDAM and LAMBDAH
   !-----------------------------------------------------------------
@@ -818,7 +818,7 @@ do k = 2, bl_levels
                      sqrt(rneutml_sq(i,j,k-1))*(one-weight_1dbl(i,j,k))
         elh(i,j,k) = elh(i,j,k)*weight_1dbl(i,j,k) +                           &
                      sqrt(rneutml_sq(i,j,k-1))*(one-weight_1dbl(i,j,k))
-        if (blending_option == blend_cth_shcu_only ) then
+        if (cap_blended_ml) then
           ! restrict blended lengthscale to be at most the 1d
           elm(i,j,k) = MIN( elm_1d, elm(i,j,k) )
           elh(i,j,k) = MIN( elh_1d, elh(i,j,k) )
