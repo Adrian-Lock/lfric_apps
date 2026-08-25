@@ -190,8 +190,8 @@ subroutine apply_wind_metrics_code(nlayers,                 &
 
           deltaAD = chi_uvw(1) - chi_d_uvw(1)
 
-          if ( shallow ) then
-            ! Shallow atmosphere
+          if ( .false. ) then
+            ! Shallow atmosphere not completely implemented yet so stick with deep for now
             denom = 1.0_r_def/(1.0_r_def + sin(chi_uvw(2))*sin(chi_d_uvw(2)) + cos(chi_uvw(2))*cos(chi_d_uvw(2))*cos(deltaAD))
             rot_mat(1,1) = (cos(chi_uvw(2))*cos(chi_d_uvw(2)) + (1.0_r_def + sin(chi_uvw(2))*sin(chi_d_uvw(2)))*cos(deltaAD))*denom
             rot_mat(1,2) = (sin(chi_uvw(2))+sin(chi_d_uvw(2)))*sin(deltaAD)*denom
