@@ -31,3 +31,15 @@ class vnXX_txxx(MacroUpgrade):
         # Add settings
         return config, self.reports
 """
+class vn32_t752(MacroUpgrade):
+    # Upgrade macro for #752 by Adrian Lock
+
+    BEFORE_TAG = "vn3.2"
+    AFTER_TAG = "vn3.2_t752"
+
+    def upgrade(self, config, meta_config=None):
+        # Add settings
+        self.add_setting(
+            config, ["namelist:mixing", "cap_blended_ml"], ".false."
+        )
+        return config, self.reports
