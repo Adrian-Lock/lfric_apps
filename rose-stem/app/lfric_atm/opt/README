@@ -55,6 +55,8 @@ Science settings
 - ral3 - regional configuration
 - ral3_ens - extra config for regional ensembles (including stochastic physics)
 - ral3_scm - single column regional physics (includes convection scheme)
+- ral3_blopt4 - development version of blended turbulence scheme in regional
+                configuration
 - ral_mixmol_opts - extra options for regional models when using the MoL
                     transport scheme and mixed solver configuration
 - ral_opts - extra options for regional models, including LBC blending weights
