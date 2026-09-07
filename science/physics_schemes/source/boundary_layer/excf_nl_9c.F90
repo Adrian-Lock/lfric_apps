@@ -56,8 +56,8 @@ use bl_option_mod, only:                                                       &
     flux_grad, Locketal2000, HoltBov1993, LockWhelan2006, entr_smooth_dec,     &
     entr_taper_zh, kprof_cu, klcl_entr, buoy_integ, buoy_integ_low,            &
     max_cu_depth, bl_res_inv, a_ent_shr_nml,  a_ent_2, one_third, two_thirds,  &
-    l_reset_dec_thres,                                                         &
-    l_use_var_fixes, dzrad_disc_opt, dzrad_ntm1, dzrad_1p5dz,                  &
+    l_reset_dec_thres, improved_tke_diag,                                      &
+    dzrad_disc_opt, dzrad_ntm1, dzrad_1p5dz,                                   &
     num_sweeps_bflux, l_converge_ga, l_use_sml_dsc_fixes, zero, one, one_half
 use model_domain_mod, only: model_type, mt_single_column
 use missing_data_mod, only: rmdi
@@ -443,6 +443,8 @@ real(kind=r_bl)::                                                              &
                     ! SML top-driven entrainment Km
        rhokm_dsct_ent(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end),    &
                     ! DSC top-driven entrainment Km
+       rhokm_dsct_top_ent(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end),&
+                    ! DSC only top-driven entrainment Km
        kh_top_factor(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end),     &
                     ! Factors to ensure K_H and K_M profiles are
        km_top_factor(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end),     &
@@ -454,6 +456,8 @@ real(kind=r_bl)::                                                              &
        kh_dsct_factor(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end),    &
                     !               "
        km_dsct_factor(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end),    &
+                    !               "
+       km_dsct_factor_top(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end),&
                     !               "
        v_top(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end),             &
                     ! Velocity scale for top-down convection
@@ -651,6 +655,8 @@ real(kind=r_bl) ::                                                             &
                    ! Shape functions for non-gradient fluxes
  lcl_fac,                                                                      &
                    ! fraction of LCL height to use as minimum mixing depth
+ rho_we_dsc_no_surf,                                                           &
+                   ! DSC rho * entrainment rate excluding surf contributions
  interp
                    ! Weight for vertical interpolation between model-levels
 
@@ -777,7 +783,7 @@ end if
 !$OMP  j1, i1, ic,  w_m_hb_3, zk_uv, zk_tq, Prandtl, w_h_uv, w_h_tq,           &
 !$OMP  w_m_uv, w_m_tq, w_s_cubed_tq, w_s_cubed_uv, gamma_wbs, c_tke,           &
 !$OMP  n_sweep, ns, lcl_fac, ng_stress_calculate, l_apply_surf_ent, interp,    &
-!$OMP  k_inv)
+!$OMP  rho_we_dsc_no_surf, k_inv)
 
 !cdir collapse
 !$OMP do SCHEDULE(DYNAMIC)
@@ -790,6 +796,7 @@ do ii = pdims%i_start, pdims%i_end, bl_segment_size
     rhokm_surf_ent(i,j) = zero
     rhokm_top_ent(i,j)  = zero
     rhokm_dsct_ent(i,j) = zero
+    rhokm_dsct_top_ent(i,j) = zero
     v_top(i,j) = zero
     v_sum(i,j) = zero
     v_top_dsc(i,j) = zero
@@ -1005,10 +1012,6 @@ do ii = pdims%i_start, pdims%i_end, bl_segment_size
         rhokm_top_ent(i,j) = 0.75_r_bl * rhokh_top_ent(i,j)                    &
                               * rdz(i,j,k) * (z_uv(i,j,k)-z_uv(i,j,k-1))       &
                               * rho_wet_tq(i,j,k-1) / rho_mix(i,j,k)
-        if (.not. l_use_var_fixes) then
-          rhokm(i,j,k) = rhokm_surf_ent(i,j)
-          rhokm_top(i,j,k) = rhokm_top_ent(i,j)
-        end if
 
       end if    ! test on DB_TOP gt 0
     end if
@@ -1096,7 +1099,16 @@ do ii = pdims%i_start, pdims%i_end, bl_segment_size
         rhokm_dsct_ent(i,j) = 0.75_r_bl * rhokh_dsct_ent(i,j)                  &
                               * rdz(i,j,k) * (z_uv(i,j,k)-z_uv(i,j,k-1))       &
                               * rho_wet_tq(i,j,k-1) / rho_mix(i,j,k)
-        if (.not. l_use_var_fixes) rhokm_top(i,j,k) = rhokm_dsct_ent(i,j)
+        if ( improved_tke_diag .and. coupled(i,j) .and.                        &
+             rho_we_dsc(i,j) > zero ) then
+          ! Compute value of rhokm_dsct_ent excluding surface terms
+          zil_corr = c_t * ( (ir_term + evap_term) /                           &
+                   (rho_mix(i,j,k) * sqrt(dscdepth(i,j))) )**two_thirds
+          rho_we_dsc_no_surf = ( ir_term + evap_term + dr_term )               &
+                           / ( db_dsct(i,j) + zil_corr )
+          rhokm_dsct_top_ent(i,j) = rhokm_dsct_ent(i,j)                        &
+                                * ( rho_we_dsc_no_surf / rho_we_dsc(i,j) )
+        end if
       end if   ! test on DB_DSCT gt 0
     end if
   end do ! i
@@ -1676,8 +1688,6 @@ do ii = pdims%i_start, pdims%i_end, bl_segment_size
                       rdz(i,j,ntml(i,j)+1) ) /                                 &
                     ( rho_wet_tq(i,j,ntml(i,j)) * db_dsct(i,j) *               &
                                       rdz(i,j,ntdsc(i,j)+1) )
-            if (.not. l_use_var_fixes)                                         &
-                  rhokm(i,j,ntdsc(i,j)+1) = rhokm_surf_ent(i,j)
           end if
           ! redesignate top-driven entrainment at ZHSC
           ! (ignore that calculated at ZH)
@@ -1759,7 +1769,7 @@ do ii = pdims%i_start, pdims%i_end, bl_segment_size
         end if  ! ( l_use_sml_dsc_fixes )
 
         if ( .not. dsc(i,j) ) then
-          if (l_use_var_fixes .and. v_top(i,j) <= zero) then
+          if (v_top(i,j) <= zero) then
             ! If v_top=0 we have no mechanism to generate turbulence in a DSC
             ktop_iterate(i,j) = .false.
             z_top_lim(i,j)    = zh(i,j) ! needs to be set here as zhsc not used
@@ -1790,16 +1800,15 @@ do ii = pdims%i_start, pdims%i_end, bl_segment_size
                                 + rhokh_surf_ent(i,j)
             rhokh_top_ent(i,j) = zero
             rhokh_surf_ent(i,j) = zero
+            if (improved_tke_diag) then
+              ! Save entrainment coef excluding enhancement by surf contrib.
+              rhokm_dsct_top_ent(i,j) = rhokm_top_ent(i,j)
+            end if
             rhokm_dsct_ent(i,j) = rhokm_top_ent(i,j)                           &
                                 + rhokm_surf_ent(i,j)
             rhokm_top_ent(i,j) = zero
             rhokm_surf_ent(i,j) = zero
-            if (.not. l_use_var_fixes) then
-              rhokm_top(i,j,ntml(i,j)+1) = rhokm_top(i,j,ntml(i,j)+1)          &
-                                          + rhokm(i,j,ntml(i,j)+1)
-              rhokm(i,j,ntml(i,j)+1) = zero
-            end if
-          end if ! test on l_use_var_fixes and v_top <= zero
+          end if ! test on v_top <= zero
         end if ! test no not.dsc
       end if   ! test on WB_RATIO le DEC_THRES
     end if   ! testing for well-mixed layer (TEST_WELL_MIXED)
@@ -2186,11 +2195,7 @@ do ii = pdims%i_start, pdims%i_end,bl_segment_size
             ! for kprof_cu eq buoy_integ use max of ksurf top calculated
             ! from buoyancy flux integration and original LCL based values
             ntml(i,j) =  max( ntml(i,j), ntml_new(i,j)-1 )
-            if (l_use_var_fixes) then
-              zh(i,j) = max( zh(i,j), zsml_top(i,j) )
-            else
-              zh(i,j) = zsml_top(i,j)
-            end if
+            zh(i,j) = max( zh(i,j), zsml_top(i,j) )
           end if
         end if
 
@@ -2787,13 +2792,8 @@ do ii = pdims%i_start, pdims%i_end, bl_segment_size
     kh_top_factor(i,j) = max( 0.7_r_bl , one - sqrt(                           &
               rhokh_surf_ent(i,j) /                                            &
                     ( rho_mix(i,j,k)*w_h_top(i,j)*vkman*zh(i,j) ) ) )
-    if (l_use_var_fixes) then
-      km_top_factor(i,j) = max( 0.7_r_bl, one-sqrt( rhokm_surf_ent(i,j) /      &
-                ( rho_wet_tq(i,j,k-1)*w_m_top(i,j)*vkman*zh(i,j) ) ) )
-    else
-      km_top_factor(i,j) = max( 0.7_r_bl , one - sqrt( rhokm(i,j,k) /          &
-                ( rho_wet_tq(i,j,k-1)*w_m_top(i,j)*vkman*zh(i,j) ) ) )
-    end if
+    km_top_factor(i,j) = max( 0.7_r_bl, one-sqrt( rhokm_surf_ent(i,j) /        &
+                    ( rho_wet_tq(i,j,k-1)*w_m_top(i,j)*vkman*zh(i,j) ) ) )
     scdepth(i,j) = zh(i,j) - zsml_base(i,j)
     factor = g1 * rho_mix(i,j,k) * v_top(i,j) *vkman *scdepth(i,j)
     if ( factor  >   zero) then
@@ -2805,14 +2805,8 @@ do ii = pdims%i_start, pdims%i_end, bl_segment_size
     factor = g1 * rho_wet_tq(i,j,k-1) * v_top(i,j) *                           &
                     vkman * scdepth(i,j) * 0.75_r_bl
     if ( factor  >   zero) then
-      if (l_use_var_fixes) then
-        km_sct_factor(i,j) = one -                                             &
-              ( rhokm_top_ent(i,j) / factor )**1.25_r_bl
+      km_sct_factor(i,j) = one - ( rhokm_top_ent(i,j) / factor )**1.25_r_bl
                                                         ! 1.25=1/0.8
-      else
-        km_sct_factor(i,j) = one -                                             &
-              ( rhokm_top(i,j,k) / factor )**1.25_r_bl
-      end if
     else
       km_sct_factor(i,j) = one
     end if
@@ -2839,18 +2833,23 @@ do ii = pdims%i_start, pdims%i_end, bl_segment_size
       factor = 0.75_r_bl * g1 * rho_wet_tq(i,j,k-1) * v_top_dsc(i,j) *         &
                             vkman * dscdepth(i,j)
       if ( factor  >   zero) then
-        if (l_use_var_fixes) then
-          km_dsct_factor(i,j) = one -                                          &
-                ( rhokm_dsct_ent(i,j) / factor )**1.25_r_bl
+        km_dsct_factor(i,j) = one - ( rhokm_dsct_ent(i,j) / factor )**1.25_r_bl
                                                         ! 1.25=1/0.8
-        else
-          km_dsct_factor(i,j) = one -                                          &
-                ( rhokm_top(i,j,k) / factor )**1.25_r_bl
-        end if
       else
         km_dsct_factor(i,j) = one
       end if
-    end if
+
+      if ( improved_tke_diag .and. coupled(i,j) ) then
+        ! Compute value km_dsct_factor would have excluding surf contribution
+        if ( factor > zero ) then
+          km_dsct_factor_top(i,j) =                                            &
+                         one - ( rhokm_dsct_top_ent(i,j) / factor )**1.25_r_bl
+        else
+          km_dsct_factor_top(i,j) = one
+        end if
+      end if
+
+   end if
   end do ! i
 end do ! ii
 !$OMP end do
@@ -3008,8 +3007,23 @@ do ii = pdims%i_start, pdims%i_end, bl_segment_size
                                       * z_pr * z_pr / zh_pr
         if (BL_diag%l_tke) then
           ! save Km/timescale for TKE diag, completed in bdy_expl2
+          if ( improved_tke_diag .and. coupled(i,j) ) then
+            ! The expression for tke_nl below assumes it scales with
+            ! v_top_dsc/dscdepth, but in the case of "coupled" dsc layers
+            ! rhokm has been enhanced by including a surface-driven
+            ! contribution and so maybe significant even if v_top_dsc
+            ! is near-zero.  To keep TKE consistent with this,
+            ! scale it up by the ratio of Km over the value it would have
+            ! had without the surface-driven contribution.
+            ! Include max(,0 and rbl_eps) in case of rounding error.
+            factor = ( max( one-km_dsct_factor(i,j)*z_pr/zh_pr, zero ) /       &
+                       max( one-km_dsct_factor_top(i,j)*z_pr/zh_pr, rbl_eps )  &
+                      )**0.8_r_bl
+          else
+            factor = one
+          end if
           tke_nl(i,j,k) = tke_nl(i,j,k) +                                      &
-                          rhokm_dsct*c_tke*v_top_dsc(i,j)/dscdepth(i,j)
+                    factor*rhokm_dsct*c_tke*v_top_dsc(i,j)/dscdepth(i,j)
         end if
         rhokm_top(i,j,k) = rhokm_top(i,j,k) + rhokm_dsct
       end if
