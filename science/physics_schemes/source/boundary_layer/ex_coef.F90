@@ -27,7 +27,7 @@ subroutine ex_coef (                                                           &
  bl_levels, k_log_layr, BL_diag,                                               &
 ! in fields
  sigma_h,flandg,dvdzm,ri,rho_wet_tq,z_uv,z_tq,z0m,zhnl,zhpar,zhsc,zdsc_base,   &
- ntpar,ntml_nl,ntdsc,nbdsc,shallow_cth,rmlmax2,rneutml_sq,delta_smag,          &
+ ntpar,ntml_nl,ntdsc,nbdsc,cumulus_cth,rmlmax2,rneutml_sq,delta_smag,          &
 ! in/out fields
  cumulus,weight_1dbl,                                                          &
 ! out fields
@@ -121,7 +121,7 @@ real(kind=r_bl), intent(in) ::                                                 &
                  ! IN Square of the neutral mixing length for Smagorinsky
  delta_smag(tdims%i_start:tdims%i_end,tdims%j_start:tdims%j_end),              &
                  ! IN delta_x used by Smagorinsky
- shallow_cth(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end)
+ cumulus_cth(pdims%i_start:pdims%i_end,pdims%j_start:pdims%j_end)
                  ! IN cloud-top height for identifying shallow cu in blending
 
 ! Declaration of new BL diagnostics.
@@ -796,7 +796,7 @@ do k = 2, bl_levels
 !$OMP          elh_1d)                                                         &
 !$OMP  SHARED(k,pdims,ri,ricrit,flandg,ntml_local,ntml_nl,z_tq,                &
 !$OMP  l_rp2,lambda_min,par_mezcla_rp,zh_local,turb_length,k_log_layr,         &
-!$OMP  z_uv,z0m,elm,elh,elh_rho,blending_option,cumulus,shallow_cth,zhpar,     &
+!$OMP  z_uv,z0m,elm,elh,elh_rho,blending_option,cumulus,cumulus_cth,zhpar,     &
 !$OMP  ntdsc,weight_1dbl,weight_bltop,delta_smag,rneutml_sq,BL_diag,local_fa,  &
 !$OMP  lambda_min_use,shallow_cu_maxtop,cap_blended_ml)
 !$OMP do SCHEDULE(STATIC)
@@ -894,9 +894,9 @@ do k = 2, bl_levels
         z_scale = max( z_scale, zhpar(i,j) )
         zht     = max( zht, zhpar(i,j) )
       else if ( cumulus(i,j) .and. blending_option == blend_cth_shcu_only    &
-                .and. shallow_cth(i,j) < shallow_cu_maxtop ) THEN
-        z_scale = max( z_scale, shallow_cth(i,j) )
-        zht     = max( zht, shallow_cth(i,j) )
+                .and. cumulus_cth(i,j) < shallow_cu_maxtop ) THEN
+        z_scale = max( z_scale, cumulus_cth(i,j) )
+        zht     = max( zht, cumulus_cth(i,j) )
       end if
 
       ! BL top includes decoupled stratocu layer, if it exists
