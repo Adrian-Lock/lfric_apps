@@ -1829,7 +1829,7 @@ end if  ! test on NON_LOCAL_BL
 !$OMP SCHEDULE(STATIC)                                                         &
 !$OMP DEFAULT(none)                                                            &
 !$OMP private(i)                                                               &
-!$OMP SHARED(pdims,l_shallow_cth)
+!$OMP SHARED(pdims,cumulus_cth)
 do i = pdims%i_start, pdims%i_end
   cumulus_cth(i,j) = zero ! initialise to zero for case of no cloud
                           ! - will then blend using BL depth
