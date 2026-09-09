@@ -1945,7 +1945,7 @@ end do
 !$OMP end PARALLEL do
 
 if (blending_option == blend_cth_shcu_only) then
-  ! only going to use the parcel top as the length scale in blending
+  ! going to use cloud top height as the length scale in blending only
   ! if the convection is shallow, where we define shallow convection here
   ! as the resolved cloud top (from cf_bluk) being below shallow_cu_maxtop
 !$OMP PARALLEL                                                                 &
