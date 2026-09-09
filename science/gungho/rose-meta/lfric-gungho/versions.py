@@ -64,7 +64,7 @@ class vn32_t479(MacroUpgrade):
 class vn32_t752(MacroUpgrade):
     # Upgrade macro for #752 by Adrian Lock
 
-    BEFORE_TAG = "vn3.2"
+    BEFORE_TAG = "vn3.2_t479"
     AFTER_TAG = "vn3.2_t752"
 
     def upgrade(self, config, meta_config=None):
