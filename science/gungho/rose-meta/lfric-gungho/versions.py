@@ -70,5 +70,7 @@ class vn32_t752(MacroUpgrade):
     def upgrade(self, config, meta_config=None):
         # Add settings
         self.add_setting(
-            config, ["namelist:mixing", "cap_blended_ml"], ".false."
-        )
+            config, ["namelist:mixing", "cap_blended_ml"], ".false.")
+        self.add_setting(
+            config, ["namelist:mixing", "shallow_cu_maxtop"], "3000.0")
+        return config, self.reports
