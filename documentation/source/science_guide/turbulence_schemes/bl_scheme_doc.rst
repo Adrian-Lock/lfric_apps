@@ -2124,21 +2124,21 @@ diagnosis of shallow cumulus from the diagnosis parcel ascent (that was
 used to identify a cumulus regime) has frequently been found to indicate deep
 convection even when the resolved clouds were shallow because the
 diagnosis parcel, being undilute, would penetrate to the tropopause.
-Under ``blending_option``\ :math:`=`\ 4, then, if such a shallow cumulus 
-regime is diagnosed, :math:`z_{\mathrm{turb}}` is set to the resolved cloud 
+Under ``blending_option``\ :math:`=`\ 4, then, if such a shallow cumulus
+regime is diagnosed, :math:`z_{\mathrm{turb}}` is set to the resolved cloud
 top height.
 
-One less desirable feature of the combination of the forms of the blended 
-mixing length :eq:`eq-lblend` and :math:`W_{1D}` :eq:`eq-tanh` functions 
-is that the resulting mixing length does not simply increase monotonically 
-towards :math:`l_{\mathrm{bl}}` as :math:`z_{\mathrm{turb}}` reduces (and 
-the turbulence becomes entirely unresolved).   To illustrate this, consider 
-the case of :math:`\Delta x= z_{\mathrm{turb}} = 1` km, which gives 
-:math:`W_{1D} \approx 0.9` (see :numref:`Figure %s <fig-blend>`\ a).  
-Ignoring the reduction in length scales towards the surface, we find 
-:math:`l_{\mathrm{bl}}=150` m and :math:`l_{\mathrm{smag}}=200` m such that 
-:math:`l_{\mathrm{blend}} = 155` m.  A simple way to avoid this is to cap 
-the blended length scale explicitly by :math:`l_{\mathrm{bl}}` via the 
+One less desirable feature of the combination of the forms of the blended
+mixing length :eq:`eq-lblend` and :math:`W_{1D}` :eq:`eq-tanh` functions
+is that the resulting mixing length does not simply increase monotonically
+towards :math:`l_{\mathrm{bl}}` as :math:`z_{\mathrm{turb}}` reduces (and
+the turbulence becomes entirely unresolved).   To illustrate this, consider
+the case of :math:`\Delta x= z_{\mathrm{turb}} = 1` km, which gives
+:math:`W_{1D} \approx 0.9` (see :numref:`Figure %s <fig-blend>`\ a).
+Ignoring the reduction in length scales towards the surface, we find
+:math:`l_{\mathrm{bl}}=150` m and :math:`l_{\mathrm{smag}}=200` m such that
+:math:`l_{\mathrm{blend}} = 155` m.  A simple way to avoid this is to cap
+the blended length scale explicitly by :math:`l_{\mathrm{bl}}` via the
 namelist switch ``cap_blended_ml``.
 
 Above the boundary layer top, `Boutle et al. (2014)`_ aimed
