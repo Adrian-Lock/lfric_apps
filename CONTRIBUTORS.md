@@ -43,6 +43,7 @@
 | SamanthaPullen      | Samantha Pullen    | Met Office                       | 2026-04-20 !
 | mo-lottieturner     | Lottie Turner      | Met Office                       | 2026-01-27 |
 | DrTVockerodtMO      | Terence Vockerodt  | Met Office                       | 2026-01-08 |
+| mattatmet           | Matthew Walker     | Met Office                       | 2026-04-21 |
 | MetBenjaminWent     | Benjamin Went      | Met Office                       | 2026-01-15 |
 | mo-rickywong        | Ricky Wong         | Met Office                       | 2026-02-24 |
 | theabro             | Nathan Luke Abraham | NCAS & University of Cambridge  | 2026-04-15 |
@@ -55,3 +56,4 @@
 | marcstring          | Marc Stringer      | NCAS, Reading University         | 2026-05-06 |
 | cameronbateman-mo   | Cameron Bateman    | Met Office                       | 2026-05-28 |
 | davelee2804         | David Lee          | Bureau of Meteorology, Australia | 2026-06-02 |
+| mo-snishimoto       | Shusuke Nishimoto  | Met Office                       | 2026-07-21 |

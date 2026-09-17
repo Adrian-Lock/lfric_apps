@@ -41,5 +41,16 @@ class vn32_t752(MacroUpgrade):
         # Add settings
         self.add_setting(
             config, ["namelist:mixing", "cap_blended_ml"], ".false."
+
+class vn32_t479(MacroUpgrade):
+    """Upgrade macro for ticket #479 by Shusuke Nishimoto."""
+
+    BEFORE_TAG = "vn3.2_t752"
+    AFTER_TAG = "vn3.2_t479"
+
+    def upgrade(self, config, meta_config=None):
+        # Commands From: rose-meta/lfric-gungho
+        self.add_setting(
+            config, ["namelist:mixing", "fullstress"], ".false."
         )
         return config, self.reports
