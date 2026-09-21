@@ -42,6 +42,8 @@ class vn32_t752(MacroUpgrade):
         self.add_setting(
             config, ["namelist:mixing", "cap_blended_ml"], ".false."
 
+        return config, self.reports
+
 class vn32_t479(MacroUpgrade):
     """Upgrade macro for ticket #479 by Shusuke Nishimoto."""
 
