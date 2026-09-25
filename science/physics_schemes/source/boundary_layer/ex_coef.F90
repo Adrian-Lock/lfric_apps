@@ -894,7 +894,7 @@ do k = 2, bl_levels
         z_scale = max( z_scale, zhpar(i,j) )
         zht     = max( zht, zhpar(i,j) )
       else if ( cumulus(i,j) .and. blending_option == blend_cth_shcu_only    &
-                .and. cumulus_cth(i,j) < shallow_cu_maxtop ) THEN
+                .and. cumulus_cth(i,j) < shallow_cu_maxtop ) then
         z_scale = max( z_scale, cumulus_cth(i,j) )
         zht     = max( zht, cumulus_cth(i,j) )
       end if
