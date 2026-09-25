@@ -283,7 +283,7 @@ integer, parameter :: blend_gridindep_fa =3
 integer, parameter :: blend_cth_shcu_only =4
 
 ! 11a switch to cap the blended mixing length by the 1D
-LOGICAL :: cap_blended_ml = .FALSE.
+logical :: cap_blended_ml = .false.
 
 ! 11b max permitted cloud top height in metres for shallow cu, used for
 !     blending_option=blend_cth_shcu_only
