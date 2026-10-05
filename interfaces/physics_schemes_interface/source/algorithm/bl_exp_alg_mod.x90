@@ -30,6 +30,7 @@ module bl_exp_alg_mod
   use bl_option_mod,                 only: l_calc_tau_at_p
   use microphysics_config_mod,       only: microphysics_casim
   use bl_option_mod,                 only: l_noice_in_turb
+  use surface_config_mod,            only: sst_turb_specified
   use um_sizes_init_mod,             only: um_sizes_init
 
   use timing_mod,           only: start_timing, stop_timing, tik, LPROF
@@ -220,6 +221,7 @@ contains
                           zht, oblen
     type( field_type) :: rdz_wth, taux_land, tauy_land, taux_ssi, tauy_ssi
     type( field_type ) :: mr_ice
+    type( field_type ) :: tile_temperature_turb
 
     integer(i_def) :: ncells
     integer(tik)   :: id
@@ -313,6 +315,10 @@ contains
     ! Surface fields
     call surface_fields%get_field('tile_fraction', tile_fraction)
     call surface_fields%get_field('tile_temperature', tile_temperature)
+    call tile_temperature%copy_field_properties(tile_temperature_turb)
+    call invoke(setval_X(tile_temperature_turb, tile_temperature))
+    if (sst_turb_specified > 0.0_r_def)  &
+	   call invoke( setval_c(tile_temperature_turb, sst_turb_specified) )
     call surface_fields%get_field('z0m_eff', z0m_eff)
     call surface_fields%get_field('ustar', ustar)
     call surface_fields%get_field('surf_interp_w2', surf_interp_w2)
@@ -389,8 +395,8 @@ contains
                                     shear, delta, max_diff_smag, zh, ntml,     &
                                     cumulus, tile_fraction, sd_orog,           &
                                     peak_to_trough_orog, silhouette_area_orog, &
-                                    tile_temperature, rhostar, recip_l_mo_sea, &
-                                    t1_sd_2d, q1_sd_2d,                        &
+                                    tile_temperature_turb, rhostar,            &
+                                    recip_l_mo_sea, t1_sd_2d, q1_sd_2d,        &
                                     dtl_mphys, dmt_mphys, sw_heating_rate,     &
                                     lw_heating_rate, cf_bulk, cf_liquid,       &
                                     rh_crit, tnuc, tnuc_nlcl,                  &

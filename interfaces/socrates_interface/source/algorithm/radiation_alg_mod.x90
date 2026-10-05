@@ -38,6 +38,7 @@ use radiation_diags_mod,     only: initialise_diags_for_radiation, &
                                    output_diags_for_radiation
 use set_thermodynamic_kernel_mod, only: set_thermodynamic_kernel_type
 use radiative_gases_config_mod,   only: h2o_rad_opt, h2o_rad_opt_ancil
+use surface_config_mod,      only: sst_rad_specified
 
 ! Configuration modules
 use planet_config_mod, only: p_zero, kappa, gravity, cp
@@ -250,6 +251,7 @@ subroutine radiation_alg(config, dtheta_rad, theta, exner, mr, moist_dyn,     &
   type( field_type ) :: layer_heat_capacity
   type( field_type ) :: t_layer_boundaries
   type( field_type ) :: mr_ice, n_ice
+  type( field_type ) :: tile_temperature_rad
 
   ! Local diagnostic fields
   type( field_type ) :: &
@@ -289,6 +291,10 @@ subroutine radiation_alg(config, dtheta_rad, theta, exner, mr, moist_dyn,     &
 
   call surface_fields%get_field('tile_fraction', tile_fraction)
   call surface_fields%get_field('tile_temperature', tile_temperature)
+  call tile_temperature%copy_field_properties(tile_temperature_rad)
+  call invoke(setval_X(tile_temperature_rad, tile_temperature))
+  if (sst_rad_specified > 0.0_r_def)  &
+         call invoke( setval_c(tile_temperature_rad, sst_rad_specified) )
   call surface_fields%get_field('tile_lw_grey_albedo', tile_lw_grey_albedo)
 
   call radiation_fields%get_field('lw_down_surf', lw_down_surf)
@@ -629,7 +635,7 @@ subroutine radiation_alg(config, dtheta_rad, theta, exner, mr, moist_dyn,     &
       conv_liquid_fraction, conv_frozen_fraction, &
       sigma_ml, sigma_mi, cloud_drop_no_conc, &
       rand_seed, n_cloud_layer, &
-      tile_fraction, tile_temperature, tile_lw_albedo, &
+      tile_fraction, tile_temperature_rad, tile_lw_albedo, &
       sulphuric, aer_mix_ratio, &
       aer_lw_absorption, aer_lw_scattering, aer_lw_asymmetry, &
       ! Conditional diagnostics
@@ -670,7 +676,7 @@ subroutine radiation_alg(config, dtheta_rad, theta, exner, mr, moist_dyn,     &
       conv_liquid_fraction, conv_frozen_fraction,                &
       sigma_ml, sigma_mi, cloud_drop_no_conc,                    &
       rand_seed, n_cloud_layer,                                  &
-      tile_fraction, tile_temperature, tile_lwinc_albedo,        &
+      tile_fraction, tile_temperature_rad, tile_lwinc_albedo,    &
       sulphuric,                                                 &
       rad_this_tstep ) )
   end if
@@ -683,7 +689,7 @@ subroutine radiation_alg(config, dtheta_rad, theta, exner, mr, moist_dyn,     &
     lw_heating_rate_rts, lw_down_surf_rts, lw_up_surf_rts,     &
     lw_up_toa_rts, lw_up_tile_rts,                             &
     exner_in_wth,                                              &
-    tile_fraction, tile_temperature, tile_lw_grey_albedo,      &
+    tile_fraction, tile_temperature_rad, tile_lw_grey_albedo,  &
     rad_this_tstep ) )
 
   call log_event( 'LW outputs:',            LOG_LEVEL_DEBUG )
@@ -721,7 +727,7 @@ subroutine radiation_alg(config, dtheta_rad, theta, exner, mr, moist_dyn,     &
       aer_lw_absorption, aer_lw_scattering, aer_lw_asymmetry, &
       pressure_in_wth, temperature_in_wth, d_mass, rho_in_wth, &
       t_layer_boundaries, mr(imr_v), o3, &
-      tile_fraction, tile_temperature, tile_lw_albedo, &
+      tile_fraction, tile_temperature_rad, tile_lw_albedo, &
       tile_sw_diffuse_albedo, tile_sw_direct_albedo, &
       radiative_cloud_fraction, liquid_fraction, frozen_fraction, &
       mr(imr_cl), mr_ice, n_ice, cloud_drop_no_conc, &
