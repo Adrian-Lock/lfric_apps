@@ -322,3 +322,18 @@ class vn32_t717(MacroUpgrade):
         self.add_setting(config, [nml, "tdep_n_cf"], "8.18")
 
         return config, self.reports
+
+
+class vn32_t754(MacroUpgrade):
+    """Upgrade macro for ticket #754 by Chris Smith."""
+
+    BEFORE_TAG = "vn3.2_t717"
+    AFTER_TAG = "vn3.2_t754"
+
+    def upgrade(self, config, meta_config=None):
+        # Commands From: rose-meta/lfric-gungho
+        self.add_setting(
+            config, ["namelist:initialization", "regrav_interp"], ".false."
+        )
+
+        return config, self.reports
