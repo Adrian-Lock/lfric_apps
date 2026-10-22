@@ -978,8 +978,8 @@ do k = 2, bl_levels
                    sqrt(rneutml_sq(i,j,k-1))*(one-weight_1dbl(i,j,k))
       if (cap_blended_ml) then
         ! restrict the blended lengthscale to be at most the 1d lengthscale
-        elm(i,j,k) = MIN( elm_1d, elm(i,j,k) )
-        elh(i,j,k) = MIN( elh_1d, elh(i,j,k) )
+        elm(i,j,k) = min( elm_1d, elm(i,j,k) )
+        elh(i,j,k) = min( elh_1d, elh(i,j,k) )
       end if
     end do
 !$OMP end do
