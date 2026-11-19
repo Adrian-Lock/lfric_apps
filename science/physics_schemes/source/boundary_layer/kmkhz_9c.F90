@@ -1626,34 +1626,10 @@ if ( sc_diag_opt == sc_diag_cu_rh_max .or.                                     &
         ! the option sc_diag_opt = sc_diag_cu_rh_max)...
         ! Set flag indicating we found a potential Sc layer top
         dsc(i,j) = .true.
-        ! Now we assume that theta-level ntdsc is wholly within the Sc-layer,
-        ! and that theta-level ntdsc+1 is composed of air with RH of
-        ! level ntdsc up to height zhsc, and air with RH of level ntdsc+2
-        ! above that height.  Interpolate to find the height of zhsc
-        ! (fraction of theta-level ntdsc+1 that is below the Sc-top).
+        ! We simply mark the rho level above our rht_max level as the
+        ! inversion height for now.  It will get interpolated using svl below.
         k = ntdsc(i,j)
-        kp2 = min(k+2, bl_levels)  ! Avoid out-of-bounds when k = bl_levels-1
-        rht_k = rht_max(i,j)
-        if ( l_mr_physics ) then
-          call qsat_wat_mix( rht_kp1, tl(i,j,k+1), p(i,j,k+1) )
-          call qsat_wat_mix( rht_kp2, tl(i,j,kp2), p(i,j,kp2) )
-        else
-          call qsat_wat( rht_kp1, tl(i,j,k+1), p(i,j,k+1) )
-          call qsat_wat( rht_kp2, tl(i,j,kp2), p(i,j,kp2) )
-        end if
-        rht_kp1 = qw(i,j,k+1) / rht_kp1
-        rht_kp2 = qw(i,j,kp2) / rht_kp2
-        if ( rht_kp2 < rht_kp1 ) then
-          ! RHt(k+1) lies between RHt(k) and RHt(k+2); compute fraction
-          interp = (rht_kp1 - rht_kp2) / (rht_k - rht_kp2)
-          zhsc(i,j) = (one-interp) * z_uv(i,j,k+1)                             &
-                    +      interp  * z_uv(i,j,kp2)
-        else
-          ! Rht(k+1) is a local minimum; can't construct k+1 as a fraction
-          ! of properties from k and k+2.  Set zhsc to what it would be in
-          ! the limit RHt(k+2) = RHt(k+1)
-          zhsc(i,j) = z_uv(i,j,k+1)
-        end if
+        zhsc(i,j)  = z_uv(i,j,ntdsc(i,j)+1)
       end if ! ( ntdsc(i,j) > 0 )
     end do
   end do
